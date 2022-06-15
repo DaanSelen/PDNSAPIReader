@@ -1,7 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -10,6 +15,8 @@ var (
 	selectedIndex = 0
 	urlArray      = [2]string{"https://powerdns.systemec.nl/rest/rest.php", "https://teslatest.systemec.nl/rest/rest.php"}
 	selectedURL   = urlArray[selectedIndex]
+	user          string
+	password      string
 )
 
 func main() {
@@ -20,10 +27,11 @@ func main() {
 func printMainStartScreen() {
 	printLines()
 	fmt.Println()
-	fmt.Println("Welcome to the PDNSAPIReader.")
+	fmt.Println("Welcome to the PDNSAPIReader. Set your user and password:")
 	fmt.Println()
 	printLines()
-	pressAny()
+	setUser()
+	setPassword()
 }
 
 func printMainCommandScreen() {
@@ -34,7 +42,7 @@ func printMainCommandScreen() {
 	fmt.Println()
 	fmt.Println("COMMANDS:\nSearchDomain (Retrieves a list of all domains that fit the searchkey)\nShowDomain (Retrieves all Records for a given domain)\nsetTTL (Set Time To Live)\n\nExit (Immediatly exit the program)")
 	fmt.Println()
-	fmt.Println("CLIENT SETTINGS MANAGEMENT:\nURLChange (Option to change between experimental and production API Servers)\nURLStatus (Checks which environment it's going to call (Default: Production))")
+	fmt.Println("CLIENT SETTINGS MANAGEMENT:\nChangeUser (Option to set the user which will be used to authenticate to the API Server)\nChangePassword (Option to set the password that will be used to authenticate to the API Server)\nURLChange (Option to change between experimental and production API Servers)\nURLStatus (Checks which environment it's going to call (Default: Production))")
 	fmt.Println()
 	printLines()
 	fmt.Print("Enter the command you want: ")
@@ -54,6 +62,10 @@ func selectInput(trialCommand string) {
 		setTTL()
 	case "exit":
 		os.Exit(0)
+	case "changeuser", "cu":
+		setUser()
+	case "changepassword", "cp":
+		setPassword()
 	case "urlchange", "uc":
 		urlChange()
 	case "urlstatus", "us":
@@ -68,18 +80,50 @@ func searchDomain() {
 	fmt.Print("What is your searchkey? ")
 	var searchKeyInput string
 	fmt.Scanln(&searchKeyInput)
-	searchKey := confirm(searchKeyInput)
-	fmt.Println(searchKey)
+	confirmedSearchKey := confirm(searchKeyInput)
 	fmt.Println()
 	printLines()
+
+	preparedForm := SeDForm{
+		Action:    "searchdomain",
+		Searchkey: confirmedSearchKey,
+		User:      user,
+		Password:  password,
+	}
+	readyForm, _ := json.Marshal(preparedForm)
+	data := sendPostRequest(readyForm)
+	fmt.Println(string(data))
 }
 
 func showDomain() {
-	printLines()
-	fmt.Println()
+	var respForm respShDForm
 
+	printLines()
+	fmt.Println()
+	fmt.Print("What is your domain? ")
+	var searchDomainInput string
+	fmt.Scanln(&searchDomainInput)
+	confirmedDomain := confirm(searchDomainInput)
 	fmt.Println()
 	printLines()
+
+	preparedForm := ShDForm{
+		Action:   "showdomain",
+		Domain:   confirmedDomain,
+		User:     user,
+		Password: password,
+	}
+	readyForm, _ := json.Marshal(preparedForm)
+	data := sendPostRequest(readyForm)
+	err := json.Unmarshal(data, &respForm)
+	if err != nil {
+		log.Println("Unable to unmarshal", err)
+	}
+	for _, x := range respForm.Domain.Records {
+		fmt.Println(x)
+	}
+	fmt.Println()
+	pressAny()
 }
 
 func setTTL() {
@@ -122,7 +166,6 @@ func urlChange() {
 	fmt.Println("URL CHANGE SUCCES. Current:", selectedURL)
 	fmt.Println()
 	printLines()
-	pressAny()
 }
 
 func urlStatus() {
@@ -131,7 +174,30 @@ func urlStatus() {
 	fmt.Println("Current URL:", selectedURL)
 	fmt.Println()
 	printLines()
-	pressAny()
+}
+
+func setUser() {
+	fmt.Print("Enter your user: ")
+	fmt.Scanln(&user)
+}
+
+func setPassword() {
+	fmt.Print("Enter your password: ")
+	fmt.Scanln(&password)
+}
+
+func sendPostRequest(form []byte) []byte {
+
+	resp, err := http.Post(selectedURL, "application/json", bytes.NewBuffer(form))
+	if err != nil {
+		log.Println("Error encountered:", err)
+	}
+	rawData, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("Error encountered:", err)
+	}
+	defer resp.Body.Close()
+	return rawData
 }
 
 func printLines() {
