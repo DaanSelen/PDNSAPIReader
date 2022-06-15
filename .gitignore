@@ -3,6 +3,7 @@
 *.so
 *.dylib
 *.key
+*.ini
 
 # Test binary, built with `go test -c`
 *.test
