@@ -15,8 +15,8 @@ import (
 
 var (
 	selectedIndex = 0
-	urlArray      = [2]string{"https://powerdns.systemec.nl/rest/rest.php", "https://teslatest.systemec.nl/rest/rest.php"}
 	selectedURL   = urlArray[selectedIndex]
+	urlArray      [2]string
 	user          [2]string
 	password      [2]string
 )
@@ -33,10 +33,18 @@ func getIniData() {
 		log.Println("Unable to load the .ini file, error:", err)
 	}
 
-	user[0] = cfg.Section("production").Key("user").String()
-	password[0] = cfg.Section("production").Key("password").String()
-	user[1] = cfg.Section("test").Key("user").String()
-	password[1] = cfg.Section("test").Key("password").String()
+	go func() {
+		urlArray[0] = cfg.Section("production").Key("server").String()
+		urlArray[1] = cfg.Section("test").Key("server").String()
+	}()
+	go func() {
+		user[0] = cfg.Section("production").Key("user").String()
+		user[1] = cfg.Section("test").Key("user").String()
+	}()
+	go func() {
+		password[0] = cfg.Section("production").Key("password").String()
+		password[1] = cfg.Section("test").Key("password").String()
+	}()
 }
 
 func printMainStartScreen() {
