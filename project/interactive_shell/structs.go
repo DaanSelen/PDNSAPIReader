@@ -24,28 +24,40 @@ type STForm struct {
 }
 
 type respSeDForm struct {
-	Code    int                    `json:"code"`
-	Message string                 `json:"message"`
-	Domains map[string]interface{} `json:"Domains"`
+	Code    int                     `json:"code"`
+	Message string                  `json:"message"`
+	Domains map[string]DomainsEntry `json:"domains"`
+}
+type DomainsEntry struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 type respShDForm struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Domain  DomainEntry `json:"domain"`
+}
+
+type DomainEntry struct {
+	ID      int      `json:"id"`
+	Name    string   `json:"name"`
+	Type    string   `json:"type"`
+	Records []Record `json:"records"`
+}
+
+type Record struct {
+	ID       int    `json:"id"`
+	DomainID int    `json:"domain_id"`
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Content  string `json:"content"`
+	TTL      int    `json:"ttl"`
+	Prio     int    `json:"prio"`
+}
+
+type respTTLForm struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
-	Domain  struct {
-		ID       int    `json:"id"`
-		Name     string `json:"name"`
-		Type     string `json:"type"`
-		Master   string `json:"master"`
-		Accounts string `json:"accounts"`
-		Records  []struct {
-			ID       int    `json:"id"`
-			DomainID int    `json:"domain_id"`
-			Name     string `json:"name"`
-			Type     string `json:"type"`
-			Content  string `json:"content"`
-			TTL      int    `json:"ttl"`
-			Prio     int    `json:"prio"`
-		} `json:"records"`
-	} `json:"domain"`
 }

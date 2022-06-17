@@ -51,11 +51,12 @@ func printMainCommandScreen() {
 
 	printLines()
 	fmt.Println()
+	fmt.Println("Current API URL:", selectedURL)
 	fmt.Println("Available commands:")
 	fmt.Println()
 	fmt.Println("COMMANDS:\nSearchDomain (Retrieves a list of all domains that fit the searchkey)\nShowDomain (Retrieves all Records for a given domain)\nsetTTL (Set Time To Live)\n\nExit (Immediatly exit the program)")
 	fmt.Println()
-	fmt.Println("CLIENT SETTINGS MANAGEMENT:\nURLChange (Option to change between experimental and production API Servers)\nURLStatus (Checks which environment it's going to call (Default: Production))")
+	fmt.Println("CLIENT SETTINGS MANAGEMENT:\nURLChange (Option to change between experimental and production API Servers)")
 	fmt.Println()
 	printLines()
 	fmt.Print("Enter the command you want: ")
@@ -77,8 +78,6 @@ func selectInput(trialCommand string) {
 		os.Exit(0)
 	case "urlchange", "uc":
 		urlChange()
-	case "urlstatus", "us":
-		urlStatus()
 	}
 	printMainCommandScreen()
 }
@@ -107,8 +106,8 @@ func searchDomain() {
 	if err != nil {
 		log.Println("Unable to unmarshal", err)
 	}
-	for _, x := range respForm.Domains {
-		fmt.Println(x)
+	for _, y := range respForm.Domains {
+		fmt.Println(y)
 	}
 	fmt.Println()
 	pressAny()
@@ -146,9 +145,37 @@ func showDomain() {
 }
 
 func setTTL() {
+	var respForm respTTLForm
+
 	printLines()
 	fmt.Println()
+	fmt.Print("What is the domain you wish to set the TTL for? ")
+	var ttlDomainInput string
+	fmt.Scanln(&ttlDomainInput)
+	confirmedTTLDomain := confirm(ttlDomainInput)
+	fmt.Print("What is the TTL you wish to set for the given domain? ")
+	var desiredTTLInput string
+	fmt.Scanln(&desiredTTLInput)
+	confirmedDesiredTTL := confirm(desiredTTLInput)
+	fmt.Print("What is the reason (optional)? ")
+	var reasonInput string
+	fmt.Scanln(&reasonInput)
 
+	preparedForm := STForm{
+		Action:     "setTTL",
+		Domainname: confirmedTTLDomain,
+		TTL:        confirmedDesiredTTL,
+		Reason:     reasonInput,
+		User:       user[selectedIndex],
+		Password:   password[selectedIndex],
+	}
+	readyForm, _ := json.Marshal(preparedForm)
+	data := sendPostRequest(readyForm)
+	err := json.Unmarshal(data, &respForm)
+	if err != nil {
+		log.Println("Unable to unmarshal", err)
+	}
+	fmt.Println(respForm.Message)
 	fmt.Println()
 	printLines()
 }
@@ -183,14 +210,6 @@ func urlChange() {
 	printLines()
 	fmt.Println()
 	fmt.Println("URL CHANGE SUCCES. Current:", selectedURL)
-	fmt.Println()
-	printLines()
-}
-
-func urlStatus() {
-	printLines()
-	fmt.Println()
-	fmt.Println("Current URL:", selectedURL)
 	fmt.Println()
 	printLines()
 }

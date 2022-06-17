@@ -1,4 +1,4 @@
-module PDNSAPIReader
+module PDNSIS
 
 go 1.18
 
