@@ -34,32 +34,55 @@ func getIniData() {
 		log.Println("Unable to load the .ini file, error:", err)
 	}
 
-	urlArray[0] = cfg.Section("production").Key("server").String()
+	urlArray[0] = cfg.Section("prod").Key("server").String()
 	urlArray[1] = cfg.Section("test").Key("server").String()
-	user[0] = cfg.Section("production").Key("user").String()
+	user[0] = cfg.Section("prod").Key("user").String()
 	user[1] = cfg.Section("test").Key("user").String()
-	password[0] = cfg.Section("production").Key("password").String()
+	password[0] = cfg.Section("prod").Key("password").String()
 	password[1] = cfg.Section("test").Key("password").String()
 }
 
 func main() {
-	go getIniData()
+	getIniData()
 	initFlags()
 
-	checkEnv()
-	fmt.Println(*actionPointer)
-	fmt.Println(*domainPointer)
-	fmt.Println(*valuePointer)
-	fmt.Println(selectedURL)
+	if checkEnv() {
+		fmt.Println(selectedURL)
+		initAction()
+	}
 }
 
-func checkEnv() {
+func checkEnv() bool {
 	switch *envPointer {
 	case "prod":
 		selectedURL = urlArray[0]
+		return true
 	case "test":
 		selectedURL = urlArray[1]
+		return true
 	default:
 		log.Println("Invalid flag entry:", *envPointer)
+		return false
+	}
+}
+
+func initAction() {
+	if *actionPointer != "" && *domainPointer != "" && *valuePointer != "" {
+		if *actionPointer == "setttl" {
+			log.Println("Selected setttl with", *domainPointer, "and", *valuePointer)
+		} else {
+			log.Println("ERROR: Missing or incorrect flags")
+		}
+	} else if *actionPointer != "" && *domainPointer != "" {
+		switch *actionPointer {
+		case "searchdomain", "sed":
+			log.Println("selected searchdomain with", *domainPointer)
+		case "showdomain", "shd":
+			log.Println("selected showdomain with", *domainPointer)
+		default:
+			log.Println("ERROR: Missing or incorrect flags")
+		}
+	} else {
+		log.Println("ERROR: Missing or incorrect flags")
 	}
 }
